@@ -16,6 +16,7 @@ import * as Location from 'expo-location';
 import * as MediaLibrary from 'expo-media-library';
 
 import Botao from '../components/Botao';
+import CameraCaptura from '../components/CameraCaptura';
 import { useLugares } from '../context/LugaresContext';
 import { montarEndereco } from '../utils/endereco';
 import { colors, sombra, STATUS } from '../theme';
@@ -35,6 +36,7 @@ export default function CadastroScreen({ route, navigation }) {
   const [status, setStatus] = useState(lugarEmEdicao?.status ?? 'quero');
   const [foto, setFoto] = useState(lugarEmEdicao?.foto ?? null);
   const [salvando, setSalvando] = useState(false);
+  const [cameraAberta, setCameraAberta] = useState(false);
 
   // Salva a foto na galeria do dispositivo (expo-media-library).
   // Na versão 58 a API antiga (saveToLibraryAsync) foi removida: usamos Asset.create.
@@ -57,25 +59,15 @@ export default function CadastroScreen({ route, navigation }) {
     }
   }
 
-  // Tira uma foto com a câmera e guarda na galeria.
-  async function tirarFoto() {
-    const permissao = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permissao.granted) {
-      Alert.alert('Câmera', 'Permissão de câmera negada. Autorize o acesso para fotografar o lugar.');
-      return;
-    }
+  // Abre a tela de captura própria, que tem o botão de virar a câmera.
+  function abrirCamera() {
+    setCameraAberta(true);
+  }
 
-    const resultado = await ImagePicker.launchCameraAsync({
-      quality: 0.6,
-      allowsEditing: true,
-      aspect: [4, 3],
-    });
-
-    if (!resultado.canceled) {
-      const uri = resultado.assets[0].uri;
-      setFoto(uri);
-      await salvarNaGaleria(uri);
-    }
+  // Recebe a foto capturada: mostra no formulário e salva na galeria.
+  async function aoCapturarFoto(uri) {
+    setFoto(uri);
+    await salvarNaGaleria(uri);
   }
 
   // Escolhe uma foto já existente na galeria.
@@ -250,7 +242,7 @@ export default function CadastroScreen({ route, navigation }) {
         )}
 
         <View style={styles.linhaBotoesFoto}>
-          <Botao titulo="Tirar foto" variante="secundario" onPress={tirarFoto} estilo={styles.botaoFoto} />
+          <Botao titulo="Tirar foto" variante="secundario" onPress={abrirCamera} estilo={styles.botaoFoto} />
           <Botao
             titulo="Escolher da galeria"
             variante="secundario"
@@ -267,6 +259,12 @@ export default function CadastroScreen({ route, navigation }) {
         />
         <Botao titulo="Cancelar" variante="secundario" onPress={() => navigation.goBack()} />
       </ScrollView>
+
+      <CameraCaptura
+        visivel={cameraAberta}
+        onFechar={() => setCameraAberta(false)}
+        onCapturar={aoCapturarFoto}
+      />
     </KeyboardAvoidingView>
   );
 }
