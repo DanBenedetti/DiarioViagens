@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "Diário de Viagens",
+    "slug": "diario-de-viagens",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Usamos sua localização para mostrar onde você está no mapa.",
+        "NSCameraUsageDescription": "Usamos a câmera para fotografar os lugares do seu diário.",
+        "NSPhotoLibraryUsageDescription": "Usamos suas fotos para escolher a imagem do lugar.",
+        "NSPhotoLibraryAddUsageDescription": "Salvamos as fotos dos lugares na sua galeria."
+      }
+    },
+    "android": {
+      "package": "com.fatec.diariodeviagens",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Permita o acesso à sua localização para exibir sua posição no mapa."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permita o acesso às suas fotos para escolher a imagem do lugar.",
+          "cameraPermission": "Permita o uso da câmera para fotografar o lugar."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Permita o acesso à galeria do dispositivo.",
+          "savePhotosPermission": "Permita salvar as fotos dos lugares na galeria."
+        }
+      ]
+    ]
+  }
+}
