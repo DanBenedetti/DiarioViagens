@@ -10,6 +10,8 @@ export default function CameraCaptura({ visivel, onFechar, onCapturar }) {
   const [permissao, pedirPermissao] = useCameraPermissions();
   const [facing, setFacing] = useState('back');
   const [capturando, setCapturando] = useState(false);
+  // Só libera o disparo quando o sensor avisa que está pronto (onCameraReady).
+  const [pronto, setPronto] = useState(false);
   const cameraRef = useRef(null);
 
   // Pede a permissão da câmera ao abrir, se ainda não foi concedida.
@@ -17,12 +19,18 @@ export default function CameraCaptura({ visivel, onFechar, onCapturar }) {
     if (visivel && permissao && !permissao.granted) pedirPermissao();
   }, [visivel, permissao, pedirPermissao]);
 
+  // Ao abrir a câmera ou trocar de lente, o sensor é remontado: bloqueia o
+  // disparo até ficar pronto de novo, para não capturar um quadro preto.
+  useEffect(() => {
+    setPronto(false);
+  }, [facing, visivel]);
+
   function virarCamera() {
     setFacing((atual) => (atual === 'back' ? 'front' : 'back'));
   }
 
   async function capturar() {
-    if (!cameraRef.current || capturando) return;
+    if (!cameraRef.current || capturando || !pronto) return;
 
     setCapturando(true);
     try {
@@ -43,7 +51,13 @@ export default function CameraCaptura({ visivel, onFechar, onCapturar }) {
           <>
             {/* O CameraView não aceita children: o rótulo fica por cima, em posição absoluta. */}
             <View style={styles.areaCamera}>
-              <CameraView ref={cameraRef} style={styles.camera} facing={facing} />
+              <CameraView
+                ref={cameraRef}
+                style={styles.camera}
+                facing={facing}
+                onCameraReady={() => setPronto(true)}
+                onMountError={() => setPronto(false)}
+              />
               <View style={styles.topo} pointerEvents="none">
                 <Text style={styles.topoTexto}>
                   {facing === 'back' ? 'Câmera traseira' : 'Câmera frontal'}
@@ -56,8 +70,12 @@ export default function CameraCaptura({ visivel, onFechar, onCapturar }) {
                 <Text style={styles.textoBotao}>Fechar</Text>
               </Pressable>
 
-              <Pressable style={styles.botaoCapturar} onPress={capturar} disabled={capturando}>
-                {capturando ? <ActivityIndicator color={colors.white} /> : null}
+              <Pressable
+                style={[styles.botaoCapturar, !pronto && styles.botaoCapturarInativo]}
+                onPress={capturar}
+                disabled={capturando || !pronto}
+              >
+                {capturando || !pronto ? <ActivityIndicator color={colors.white} /> : null}
               </Pressable>
 
               <Pressable style={styles.botaoLateral} onPress={virarCamera}>
@@ -127,6 +145,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  botaoCapturarInativo: { opacity: 0.45 },
   aviso: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28 },
   avisoTitulo: { color: colors.white, fontSize: 18, fontWeight: '800', marginBottom: 8 },
   avisoTexto: { color: '#CFE3EA', fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 20 },
