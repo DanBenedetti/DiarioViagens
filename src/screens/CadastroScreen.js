@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Image,
@@ -64,6 +64,47 @@ export default function CadastroScreen({ route, navigation }) {
     setCameraAberta(true);
   }
 
+  // O Android pode encerrar o app enquanto a câmera está aberta. Nesse caso o
+  // resultado da captura fica pendente e é recuperado aqui (como no projeto da aula).
+  useEffect(() => {
+    (async () => {
+      try {
+        const pendente = await ImagePicker.getPendingResultAsync();
+        if (pendente && !pendente.canceled && pendente.assets && pendente.assets.length > 0) {
+          setFoto(pendente.assets[0].uri);
+        }
+      } catch (erro) {
+        // Não havia captura pendente.
+      }
+    })();
+  }, []);
+
+  // Foto pela câmera do sistema (mesmo caminho usado no projeto da aula).
+  async function tirarFotoComCamera() {
+    const permissao = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissao.granted) {
+      Alert.alert('Câmera', 'Permissão de câmera negada. Autorize o acesso para fotografar o lugar.');
+      return;
+    }
+
+    try {
+      const resultado = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        cameraType: ImagePicker.CameraType.back,
+        quality: 1,
+        allowsEditing: true,
+      });
+
+      if (!resultado.canceled) {
+        const uri = resultado.assets[0].uri;
+        setFoto(uri);
+        await salvarNaGaleria(uri);
+      }
+    } catch (erro) {
+      Alert.alert('Câmera', `Não foi possível abrir a câmera.\n\n${erro?.message ?? String(erro)}`);
+    }
+  }
+
   // Recebe a foto capturada: mostra no formulário e salva na galeria.
   async function aoCapturarFoto(uri) {
     setFoto(uri);
@@ -79,7 +120,8 @@ export default function CadastroScreen({ route, navigation }) {
     }
 
     const resultado = await ImagePicker.launchImageLibraryAsync({
-      quality: 0.6,
+      mediaTypes: ['images'],
+      quality: 1,
       allowsEditing: true,
       aspect: [4, 3],
     });
@@ -242,7 +284,7 @@ export default function CadastroScreen({ route, navigation }) {
         )}
 
         <View style={styles.linhaBotoesFoto}>
-          <Botao titulo="Tirar foto" variante="secundario" onPress={abrirCamera} estilo={styles.botaoFoto} />
+          <Botao titulo="Tirar foto" variante="secundario" onPress={tirarFotoComCamera} estilo={styles.botaoFoto} />
           <Botao
             titulo="Escolher da galeria"
             variante="secundario"
@@ -250,6 +292,13 @@ export default function CadastroScreen({ route, navigation }) {
             estilo={styles.botaoFoto}
           />
         </View>
+
+        <Botao
+          titulo="Câmera com troca de lente"
+          variante="secundario"
+          onPress={abrirCamera}
+          estilo={styles.botaoTrocaLente}
+        />
 
         <Botao
           titulo={editando ? 'Salvar alterações' : 'Salvar lugar'}
@@ -306,5 +355,6 @@ const styles = StyleSheet.create({
   previewTexto: { color: colors.muted, fontSize: 13 },
   linhaBotoesFoto: { flexDirection: 'row', gap: 10, marginTop: 10 },
   botaoFoto: { flex: 1 },
+  botaoTrocaLente: { marginTop: 10 },
   botaoSalvar: { marginTop: 24, marginBottom: 10 },
 });
